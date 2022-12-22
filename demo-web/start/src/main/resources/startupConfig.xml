@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<instances>
+		<instance type="service" name="demo-web" />
+		<instance type="database" name="demo-webdb"/>
+		<instance type="cache" name="demo-webcache"/>
+	</instances>
+
+	<variables>
+		<!-- 变量
+            sourceKey：指定config.properties中的key，可以用实际的key，也可以用{}表示实例列表中的key；
+            keyOrder：选择实例序号，不填默认为0，即第一个实例，超过填写范围则会出错；
+            split：值分隔符，一般是英文逗号","，若不填则取第一个；
+            index：取第几个值，不填则默认第一个，split填写的情况下才有效
+         -->
+
+	</variables>
+	<properties>
+		<!-- property自闭合标签用于指定config.properties与程序运行环境变量中属性的对应关系，一个property表情对应环境变量中的一个属性（targetKey）
+               sourceKey：指定config.properties中的key，可以用实际的key，大括号{}放实例列表的key；
+               keyOrder：选择实例序号，不填默认为0，即第一个实例，超过填写范围则会出错；
+               targetKey：表示环境变量属性名，类似application.properties里的属性名称；
+               targetValue：值的格式，大括号{}放变量名或者实例列表的key，sourceKey与targetValue不会同时出现，否则不解析，只打错误日志；
+               split：值分隔符，一般是英文逗号","，若不填则取第一个；
+               index：取第几个值，不填则默认第一个，split填写的情况下才有效;
+               decrypt：是否需要解密(true/false)，默认不需要(false) -->
+
+	</properties>
+</config>

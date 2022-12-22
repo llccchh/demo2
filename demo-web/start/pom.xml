@@ -1,0 +1,133 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.aries.jc.lch</groupId>
+        <artifactId>demo-web</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <groupId>com.aries.jc.lch</groupId>
+    <artifactId>start</artifactId>
+
+    <packaging>jar</packaging>
+    <name>start - start</name>
+    <description>工程启动类</description>
+
+    <dependencies>
+        <!-- provider依赖business，business依赖reference和common中的base -->
+        <dependency>
+            <groupId>com.aries.jc.lch</groupId>
+            <artifactId>demo-web-provider</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- 前端模块，按需使用，不用需要删除 -->
+        <dependency>
+            <groupId>com.aries.jc.lch</groupId>
+            <artifactId>view</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- 工具模块，可选 -->
+        <dependency>
+            <groupId>com.aries.jc.lch</groupId>
+            <artifactId>demo-web-tool</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aries.jc.common</groupId>
+            <artifactId>aries-jc-bic-startup-config</artifactId>
+        </dependency>
+        <!-- 注册中心consul，启动consul后必须依赖actuator 按需使用 -->
+        <!--<dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aries.jc.common</groupId>
+            <artifactId>aries-jc-starter-web</artifactId>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+
+    <!-- TODO 自行加入各种必要的maven插件，如assembly打包插件，参考4.0的demo工程hik-ga-demo -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <!-- start模块在jar包中排除工程配置文件 -->
+                    <excludes>
+                        <exclude>**/*.properties</exclude>
+                        <exclude>sync/**</exclude>
+                        <exclude>startupConfig.xml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- 设置源文件编码方式 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <!-- 打包source文件为jar文件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <configuration>
+                    <attach>true</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <finalName>demo-web</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <outputDirectory>../../output/</outputDirectory>
+                    <archive>
+                        <manifest>
+							<!--<mainClass>改为自己的库+启动类名</mainClass>-->
+                            <mainClass>com.aries.jc.lch.LchApplication</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptors>
+                        <descriptor>src/assembly/assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

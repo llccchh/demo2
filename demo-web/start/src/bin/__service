@@ -1,0 +1,199 @@
+#!/bin/bash
+_ServerName=不用管这个值,postinstall.sh脚本会替换它的值
+JAVA_HOME=不用管这个值,postinstall.sh脚本会替换它的值
+# 修改为自己的服务启动类名称,包含包名
+_MainClass=com.aries.jc.lch.Bootstrap
+# 修改为自己的服务标识
+_SystemctlName=demo-web
+
+JAVA_BIN=${JAVA_HOME}/bin/java
+JAVA_JPS=${JAVA_HOME}/bin/jps
+# JAVA_HOME="/opt/opsmgr/web/components/jre18linux64.1"
+# jre version global variable
+_JRE_VERSION=
+# path configuration
+_DIR="$( cd "$(dirname "$0")" && pwd )"
+# service path
+_HOME_DIR=$(dirname "$_DIR")
+# 去读服务lib文件夹下所有文件名称,暂时不需要了,classpath可以指定目录
+# _LIB_PATH=${_HOME_DIR}/lib
+# _JAR_LIST=$(ls ${_LIB_PATH})
+# _JAR_LIST_STR=""
+# for filename in ${_JAR_LIST}
+# do
+#  _JAR_LIST_STR=${_JAR_LIST_STR}${filename}:
+# done
+# _JAR_LIST_STR=${_JAR_LIST_STR%*:}
+
+# java版本
+_JRE_VERSION_TXT="${_DIR}/jreversionlinux.txt"
+# config.priperties path
+_CONF_DIR=${_HOME_DIR}/../../conf
+# segmentId
+
+# memory configuration
+# avoid attribute don't set up in config.proiperties, Judge not empty and set default value, using "echo" implement return function, forbid echo other string
+# $1 default value
+# $2 value from config.properties
+function safeGetMemory(){
+    if [ $# = 1 ]
+    then
+        echo ${1}M
+    else
+        echo ${2}M
+    fi
+}
+# memory configuration
+# avoid attribute don't set up in config.proiperties, Judge not empty and set default value, using "echo" implement return function, forbid echo other string
+# $1 default value
+# $2 value from config.properties
+function safeGetMemoryForKb(){
+    if [ $# = 1 ]
+    then
+        echo ${1}K
+    else
+        echo ${2}K
+    fi
+}
+
+#可以有效降低内存
+_MALLOC_ARENA_MAX=$(cat /proc/cpuinfo | grep "processor" | wc -l)
+export MALLOC_ARENA_MAX=${_MALLOC_ARENA_MAX}
+echo "export MALLOC_ARENA_MAX=${_MALLOC_ARENA_MAX}"
+
+_CONFIG_XMS=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.Xms | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_XMX=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.Xmx | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_XSS=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.Xss | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_METASPACESIZE=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.MetaspaceSize | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_MAXMETASPACESIZE=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.MaxMetaspaceSize | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_MAX_DIRECT_MEMORY_SIZE=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.MaxDirectMemorySize | awk '{print $1}'| awk -F "=" '{print $2}'`
+_CONFIG_RESERVED_CODE_CACHE_SIZE=`cat ${_CONF_DIR}/config.properties | grep "${_SystemctlName}".[[:digit:]]*.ReservedCodeCacheSize | awk '{print $1}'| awk -F "=" '{print $2}'`
+# Easy to view configuration, print properties to file
+_MemoryFile=${_DIR}/memory.txt
+echo "memory config">${_MemoryFile}
+_Xms=`safeGetMemory 256 ${_CONFIG_XMS}`
+echo "Xms=${_Xms}">>${_MemoryFile}
+_Xmx=`safeGetMemory 256 ${_CONFIG_XMX}`
+echo "Xmx=${_Xmx}">>${_MemoryFile}
+_Xss=`safeGetMemoryForKb 256 ${_CONFIG_XSS}`
+echo "Xss=${_Xss}">>${_MemoryFile}
+_MetaspaceSize=`safeGetMemory 96 ${_CONFIG_METASPACESIZE}`
+echo "MetaspaceSize=${_MetaspaceSize}">>${_MemoryFile}
+_MaxMetaspaceSize=`safeGetMemory 128 ${_CONFIG_MAXMETASPACESIZE}`
+echo "MaxMetaspaceSize=${_MaxMetaspaceSize}">>${_MemoryFile}
+_MaxDirectMemorySize=`safeGetMemory 256 ${_CONFIG_MAX_DIRECT_MEMORY_SIZE}`
+echo "MaxDirectMemorySize=${_MaxDirectMemorySize}">>${_MemoryFile}
+_ReservedCodeCacheSize=`safeGetMemory 128 ${_CONFIG_RESERVED_CODE_CACHE_SIZE}`
+echo "ReservedCodeCacheSize=${_ReservedCodeCacheSize}">>${_MemoryFile}
+
+# JVM配置项
+JAVA_OPTS="$JAVA_OPTS -Duser.dir=${_HOME_DIR}/config"
+JAVA_OPTS="$JAVA_OPTS -Xms${_Xms}"
+JAVA_OPTS="$JAVA_OPTS -Xmx${_Xmx}"
+JAVA_OPTS="$JAVA_OPTS -Xss${_Xss}"
+JAVA_OPTS="$JAVA_OPTS -XX:MaxMetaspaceSize=${_MaxMetaspaceSize}"
+JAVA_OPTS="$JAVA_OPTS -XX:MetaspaceSize=${_MetaspaceSize}"
+JAVA_OPTS="$JAVA_OPTS -XX:MaxDirectMemorySize=${_MaxDirectMemorySize}"
+JAVA_OPTS="$JAVA_OPTS -XX:ReservedCodeCacheSize=${_ReservedCodeCacheSize}"
+JAVA_OPTS="$JAVA_OPTS -XX:NativeMemoryTracking=summary"
+JAVA_OPTS="$JAVA_OPTS -XX:SurvivorRatio=8"
+JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
+JAVA_OPTS="$JAVA_OPTS -XX:+DisableExplicitGC"
+JAVA_OPTS="$JAVA_OPTS -Djava.security.egd=file:/dev/./urandom"
+JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true"
+# JAVA_OPTS="$JAVA_OPTS -Dcom.sun.jndi.ldap.connect.pool.protocol=\"plain ssl\""
+JAVA_OPTS="$JAVA_OPTS -Djava.io.tmpdir=${_HOME_DIR}/temp"
+# JAVA_OPTS="$JAVA_OPTS -Djava.rmi.server.hostname=10.19.132.54 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+# 调试用参数,放在这里方便复制
+# -Xdebug -Xrunjdwp:transport=dt_socket,suspend=n,server=y,address=8889
+# -Djava.rmi.server.hostname=10.19.132.54 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+# JDK8 特有的参数
+JAVA_OPTS_JDK8="$JAVA_OPTS -XX:CICompilerCount=2 -XX:+UseG1GC -XX:ConcGCThreads=1 -XX:ParallelGCThreads=4 -XX:+ExplicitGCInvokesConcurrent"
+
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:+PrintGCDetails"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:+PrintGCDateStamps"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:+PrintGCTimeStamps"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -Xloggc:${_HOME_DIR}/logs/gc.log"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:+UseGCLogFileRotation"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:NumberOfGCLogFiles=10"
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -XX:GCLogFileSize=8M"
+# 新增jdk11所需要的启动参数，格式如下
+# JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 XXXXXX"
+# JDK11特有的参数
+JAVA_OPTS_JDK11="$JAVA_OPTS -Xlog:gc*:file=${_HOME_DIR}/logs/gc.log:time,uptime,uptimemillis:filecount=10,filesize=10240000"
+JAVA_OPTS_JDK11="$JAVA_OPTS_JDK11 --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"
+# 新增jdk11所需要的启动参数，格式如下
+# JAVA_OPTS_JDK11="$JAVA_OPTS_JDK11 XXXXXX"
+# 配置classpath
+Classpath_Extra_Jdk8=.:${JAVA_HOME}/lib/dt.jar:${JAVA_HOME}/lib/tools.jar
+_Classpath_jdk8=${Classpath_Extra_Jdk8}:"${_HOME_DIR}/config":"${_HOME_DIR}/lib/*":"${_HOME_DIR}/../../conf"
+_Classpath_Openjdk11=.:"${_HOME_DIR}/config":"${_HOME_DIR}/lib/*":"${_HOME_DIR}/../../conf":"${_HOME_DIR}/../../resource/resourcepath"
+
+JAVA_OPTS_JDK8="$JAVA_OPTS_JDK8 -classpath ${_Classpath_jdk8}"
+JAVA_OPTS_JDK11="$JAVA_OPTS_JDK11 -classpath ${_Classpath_Openjdk11}"
+
+# 获取jre版本
+function judgeJreVersion(){
+    # 文件不存在,则调用java -version命令将结果写入文件中
+    if [ ! -f "${_JRE_VERSION_TXT}" ]
+    then
+        `${JAVA_HOME}/bin/java -version>"${_JRE_VERSION_TXT}" 2>&1`
+    fi
+    # 判断是否为openjdk
+    exists=`cat ${_JRE_VERSION_TXT} | grep 1.8 | wc -l`
+    if [ ${exists} -gt 0 ]
+    then
+        _JRE_VERSION=8
+    else
+        _JRE_VERSION=11
+    fi
+}
+judgeJreVersion
+function do_exec()
+{
+    if [ ${_JRE_VERSION} -eq 8 ]
+    then
+    # JDK8
+        nohup ${JAVA_BIN} $JAVA_OPTS_JDK8 ${_MainClass} >/dev/null 2>&1 &
+    elif [ ${_JRE_VERSION} -eq 11 ]
+    then
+    # OPENJDK11
+        nohup ${JAVA_BIN} $JAVA_OPTS_JDK11 ${_MainClass} >/dev/null 2>&1 &
+    else
+        echo "Invalid JRE version"
+    fi
+}
+# 获取启动类名称(不含包名),用于jps命令获取pid
+_MainClassName=${_MainClass##*.}
+case "$1" in
+    start)
+        echo "service name: $_ServerName is starting..."
+        chmod -R 777 ${_HOME_DIR}
+        chmod -R 777 ${_HOME_DIR}/../../logs
+        do_exec
+            ;;
+    stop)
+        _Pid=`${JAVA_JPS} | grep ${_MainClassName} | awk '{print $1}'`
+        echo "will kill pid ${_Pid}"
+        kill -15 ${_Pid}
+        echo ${_ServerName} is stopping
+           ;;
+    restart)
+        _Pid=`${JAVA_JPS} | grep ${_MainClassName} | awk '{print $1}'`
+        if [  X"$_Pid"==X ]; then
+            kill -15 ${_Pid}
+            do_exec
+            echo "${_ServerName} restarted"
+        else
+            echo "service not running, will do nothing"
+            exit 1
+        fi
+            ;;
+    status)
+        ps -ef | grep ${_MainClassName} | grep -v grep
+        ;;
+    *)
+        echo "usage: service ${_ServerName} {start|stop|restart|status}" >&2
+        exit 3
+        ;;
+esac

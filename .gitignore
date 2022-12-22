@@ -1,0 +1,6 @@
+# Project exclude paths
+/demo-web/api/demo-web-external-api/target/
+/demo-web/modules/demo-web-business/target/
+/demo-web/modules/demo-web-provider/target/
+/demo-web/start/target/
+/demo-web/view/target/
